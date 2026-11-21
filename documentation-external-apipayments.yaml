@@ -1,0 +1,2941 @@
+---
+openapi: "3.0.4"
+info:
+  title: "Payments API"
+  description: "Initiate and retrieve domestic and international payments, payment\
+    \ batches, card deposits, claim payments, and direct debit mandates."
+  version: "v1"
+servers:
+- url: "https://apisandbox.landsbankinn.is/api/Payments/Payments/v1"
+paths:
+  /CardDeposits:
+    post:
+      tags:
+      - "CardDeposits"
+      summary: "Initiates a new card deposit."
+      description: "Returns `201 Created` when `isStp` is true and the deposit has\
+        \ been executed, or `202 Accepted`\r\nwhen `isStp` is false and the deposit\
+        \ is stored awaiting approval. Both carry the payment ID and\r\nits initial\
+        \ status in the body, and a `Location` header pointing at the GET endpoint\
+        \ for the payment.\r\n            \r\n`Idempotency-Key` is optional and makes\
+        \ the request safe to retry. A repeat with the same key from the\r\nsame application\
+        \ to this operation within 24 hours returns the original response instead\
+        \ of creating a\r\nsecond deposit; a repeat while the first request is still\
+        \ being processed returns `409 Conflict`.\r\nThe request body is not compared.\
+        \ Use a new key for a different deposit."
+      operationId: "createCardDeposit"
+      parameters:
+      - name: "Idempotency-Key"
+        in: "header"
+        description: "Optional idempotency key; see the operation description."
+        schema:
+          type: "string"
+      - name: "Accept-Language"
+        in: "header"
+        description: "The language for human-readable text that originates from payment\
+          \ processing, such as `errorMessage` on a failed payment: `is` (Icelandic,\
+          \ the default) or `en` (English). Request validation messages are always\
+          \ in English."
+        schema:
+          enum:
+          - "is"
+          - "en"
+          type: "string"
+          default: "is"
+      requestBody:
+        description: "The card deposit request."
+        content:
+          application/json:
+            schema:
+              allOf:
+              - $ref: "#/components/schemas/CardDepositRequest"
+              description: "Request to initiate a deposit to a payment card."
+              example:
+                isStp: true
+                debtorAccount:
+                  bban: "015926007654"
+                  nationalId: "0101302399"
+                card:
+                  cardNumber: "4111111111111111"
+                instructedAmount:
+                  amount: 10000
+                  currency: "ISK"
+                remittanceInformationUnstructured: "Card top-up"
+          text/json:
+            schema:
+              allOf:
+              - $ref: "#/components/schemas/CardDepositRequest"
+              description: "Request to initiate a deposit to a payment card."
+              example:
+                isStp: true
+                debtorAccount:
+                  bban: "015926007654"
+                  nationalId: "0101302399"
+                card:
+                  cardNumber: "4111111111111111"
+                instructedAmount:
+                  amount: 10000
+                  currency: "ISK"
+                remittanceInformationUnstructured: "Card top-up"
+          application/*+json:
+            schema:
+              allOf:
+              - $ref: "#/components/schemas/CardDepositRequest"
+              description: "Request to initiate a deposit to a payment card."
+              example:
+                isStp: true
+                debtorAccount:
+                  bban: "015926007654"
+                  nationalId: "0101302399"
+                card:
+                  cardNumber: "4111111111111111"
+                instructedAmount:
+                  amount: 10000
+                  currency: "ISK"
+                remittanceInformationUnstructured: "Card top-up"
+        required: true
+      responses:
+        "201":
+          description: "The deposit has been executed (`isStp` true). `Location` points\
+            \ at the payment."
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PaymentInitiationResponse"
+            text/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PaymentInitiationResponse"
+        "202":
+          description: "The deposit is stored and awaits approval before it is executed\
+            \ (`isStp` false). `Location` points at the payment."
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PaymentInitiationResponse"
+            text/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PaymentInitiationResponse"
+        "400":
+          description: "Bad Request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ValidationProblemDetails"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "409":
+          description: "A request with the same `Idempotency-Key` is still being processed;\
+            \ retry after it completes."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+  /CardDeposits/{id}:
+    get:
+      tags:
+      - "CardDeposits"
+      summary: "Gets a card deposit by its ID."
+      operationId: "getCardDeposit"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The ID returned from the POST endpoint."
+        required: true
+        schema:
+          type: "string"
+      - name: "Accept-Language"
+        in: "header"
+        description: "The language for human-readable text that originates from payment\
+          \ processing, such as `errorMessage` on a failed payment: `is` (Icelandic,\
+          \ the default) or `en` (English). Request validation messages are always\
+          \ in English."
+        schema:
+          enum:
+          - "is"
+          - "en"
+          type: "string"
+          default: "is"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CardDepositResponse"
+            text/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CardDepositResponse"
+        "400":
+          description: "Bad Request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ValidationProblemDetails"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "404":
+          description: "Not Found"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+  /ClaimPayments:
+    post:
+      tags:
+      - "ClaimPayments"
+      summary: "Initiates a new claim payment."
+      description: "Returns `201 Created` when `isStp` is true and the payment has\
+        \ been executed, or `202 Accepted`\r\nwhen `isStp` is false and the payment\
+        \ is stored awaiting approval. Both carry the payment ID and\r\nits initial\
+        \ status in the body, and a `Location` header pointing at the GET endpoint\
+        \ for the payment.\r\n            \r\n`Idempotency-Key` is optional and makes\
+        \ the request safe to retry. A repeat with the same key from the\r\nsame application\
+        \ to this operation within 24 hours returns the original response instead\
+        \ of creating a\r\nsecond payment; a repeat while the first request is still\
+        \ being processed returns `409 Conflict`.\r\nThe request body is not compared.\
+        \ Use a new key for a different payment."
+      operationId: "createClaimPayment"
+      parameters:
+      - name: "Idempotency-Key"
+        in: "header"
+        description: "Optional idempotency key; see the operation description."
+        schema:
+          type: "string"
+      - name: "Accept-Language"
+        in: "header"
+        description: "The language for human-readable text that originates from payment\
+          \ processing, such as `errorMessage` on a failed payment: `is` (Icelandic,\
+          \ the default) or `en` (English). Request validation messages are always\
+          \ in English."
+        schema:
+          enum:
+          - "is"
+          - "en"
+          type: "string"
+          default: "is"
+      requestBody:
+        description: "The claim payment request."
+        content:
+          application/json:
+            schema:
+              allOf:
+              - $ref: "#/components/schemas/ClaimPaymentRequest"
+              description: "Request to initiate a payment of an Icelandic claim."
+              example:
+                isStp: true
+                debtorAccount:
+                  bban: "015926007654"
+                  nationalId: "0101302399"
+                claim:
+                  claimNumber: "053026000001"
+                  claimantNationalId: "4502692119"
+                  dueDate: "2026-10-01"
+                  isPartialPayment: false
+                instructedAmount:
+                  amount: 25000
+                  currency: "ISK"
+                debtorReference: "CLAIM-2026-118"
+          text/json:
+            schema:
+              allOf:
+              - $ref: "#/components/schemas/ClaimPaymentRequest"
+              description: "Request to initiate a payment of an Icelandic claim."
+              example:
+                isStp: true
+                debtorAccount:
+                  bban: "015926007654"
+                  nationalId: "0101302399"
+                claim:
+                  claimNumber: "053026000001"
+                  claimantNationalId: "4502692119"
+                  dueDate: "2026-10-01"
+                  isPartialPayment: false
+                instructedAmount:
+                  amount: 25000
+                  currency: "ISK"
+                debtorReference: "CLAIM-2026-118"
+          application/*+json:
+            schema:
+              allOf:
+              - $ref: "#/components/schemas/ClaimPaymentRequest"
+              description: "Request to initiate a payment of an Icelandic claim."
+              example:
+                isStp: true
+                debtorAccount:
+                  bban: "015926007654"
+                  nationalId: "0101302399"
+                claim:
+                  claimNumber: "053026000001"
+                  claimantNationalId: "4502692119"
+                  dueDate: "2026-10-01"
+                  isPartialPayment: false
+                instructedAmount:
+                  amount: 25000
+                  currency: "ISK"
+                debtorReference: "CLAIM-2026-118"
+        required: true
+      responses:
+        "201":
+          description: "The payment has been executed (`isStp` true). `Location` points\
+            \ at the payment."
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PaymentInitiationResponse"
+            text/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PaymentInitiationResponse"
+        "202":
+          description: "The payment is stored and awaits approval before it is executed\
+            \ (`isStp` false). `Location` points at the payment."
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PaymentInitiationResponse"
+            text/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PaymentInitiationResponse"
+        "400":
+          description: "Bad Request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ValidationProblemDetails"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "409":
+          description: "A request with the same `Idempotency-Key` is still being processed;\
+            \ retry after it completes."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+  /ClaimPayments/{id}:
+    get:
+      tags:
+      - "ClaimPayments"
+      summary: "Gets a claim payment by its ID."
+      operationId: "getClaimPayment"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The ID returned from the POST endpoint."
+        required: true
+        schema:
+          type: "string"
+      - name: "Accept-Language"
+        in: "header"
+        description: "The language for human-readable text that originates from payment\
+          \ processing, such as `errorMessage` on a failed payment: `is` (Icelandic,\
+          \ the default) or `en` (English). Request validation messages are always\
+          \ in English."
+        schema:
+          enum:
+          - "is"
+          - "en"
+          type: "string"
+          default: "is"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ClaimPaymentResponse"
+            text/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ClaimPaymentResponse"
+        "400":
+          description: "Bad Request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ValidationProblemDetails"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "404":
+          description: "Not Found"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+  /CreditTransfers:
+    post:
+      tags:
+      - "CreditTransfers"
+      summary: "Initiates a new credit transfer payment."
+      description: "Returns `201 Created` when `isStp` is true and the payment has\
+        \ been executed, or `202 Accepted`\r\nwhen `isStp` is false and the payment\
+        \ is stored awaiting approval. Both carry the payment ID and\r\nits initial\
+        \ status in the body, and a `Location` header pointing at the GET endpoint\
+        \ for the payment.\r\n            \r\n`Idempotency-Key` is optional and makes\
+        \ the request safe to retry. A repeat with the same key from the\r\nsame application\
+        \ to this operation within 24 hours returns the original response instead\
+        \ of creating a\r\nsecond payment; a repeat while the first request is still\
+        \ being processed returns `409 Conflict`.\r\nThe request body is not compared.\
+        \ Use a new key for a different payment."
+      operationId: "createCreditTransfer"
+      parameters:
+      - name: "Idempotency-Key"
+        in: "header"
+        description: "Optional idempotency key; see the operation description."
+        schema:
+          type: "string"
+      - name: "Accept-Language"
+        in: "header"
+        description: "The language for human-readable text that originates from payment\
+          \ processing, such as `errorMessage` on a failed payment: `is` (Icelandic,\
+          \ the default) or `en` (English). Request validation messages are always\
+          \ in English."
+        schema:
+          enum:
+          - "is"
+          - "en"
+          type: "string"
+          default: "is"
+      requestBody:
+        description: "The credit transfer request."
+        content:
+          application/json:
+            schema:
+              allOf:
+              - $ref: "#/components/schemas/CreditTransferRequest"
+              description: "Request to initiate a domestic credit transfer."
+              example:
+                isStp: true
+                endToEndIdentification: "E2E-2026-118"
+                debtorAccount:
+                  bban: "015926007654"
+                  nationalId: "0101302399"
+                creditorAccount:
+                  bban: "010826123456"
+                  nationalId: "4502692119"
+                instructedAmount:
+                  amount: 25000
+                  currency: "ISK"
+                categoryCode: "03"
+                remittanceInformationUnstructured: "Invoice 2026-118"
+                debtorReference: "INV-2026-118"
+                paymentDate: "2026-10-01"
+          text/json:
+            schema:
+              allOf:
+              - $ref: "#/components/schemas/CreditTransferRequest"
+              description: "Request to initiate a domestic credit transfer."
+              example:
+                isStp: true
+                endToEndIdentification: "E2E-2026-118"
+                debtorAccount:
+                  bban: "015926007654"
+                  nationalId: "0101302399"
+                creditorAccount:
+                  bban: "010826123456"
+                  nationalId: "4502692119"
+                instructedAmount:
+                  amount: 25000
+                  currency: "ISK"
+                categoryCode: "03"
+                remittanceInformationUnstructured: "Invoice 2026-118"
+                debtorReference: "INV-2026-118"
+                paymentDate: "2026-10-01"
+          application/*+json:
+            schema:
+              allOf:
+              - $ref: "#/components/schemas/CreditTransferRequest"
+              description: "Request to initiate a domestic credit transfer."
+              example:
+                isStp: true
+                endToEndIdentification: "E2E-2026-118"
+                debtorAccount:
+                  bban: "015926007654"
+                  nationalId: "0101302399"
+                creditorAccount:
+                  bban: "010826123456"
+                  nationalId: "4502692119"
+                instructedAmount:
+                  amount: 25000
+                  currency: "ISK"
+                categoryCode: "03"
+                remittanceInformationUnstructured: "Invoice 2026-118"
+                debtorReference: "INV-2026-118"
+                paymentDate: "2026-10-01"
+        required: true
+      responses:
+        "201":
+          description: "The payment has been executed (`isStp` true). `Location` points\
+            \ at the payment."
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PaymentInitiationResponse"
+            text/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PaymentInitiationResponse"
+        "202":
+          description: "The payment is stored and awaits approval before it is executed\
+            \ (`isStp` false). `Location` points at the payment."
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PaymentInitiationResponse"
+            text/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PaymentInitiationResponse"
+        "400":
+          description: "Bad Request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ValidationProblemDetails"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "409":
+          description: "A request with the same `Idempotency-Key` is still being processed;\
+            \ retry after it completes."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+  /CreditTransfers/{id}:
+    get:
+      tags:
+      - "CreditTransfers"
+      summary: "Gets a credit transfer by its ID."
+      operationId: "getCreditTransfer"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The ID returned from the POST endpoint."
+        required: true
+        schema:
+          type: "string"
+      - name: "Accept-Language"
+        in: "header"
+        description: "The language for human-readable text that originates from payment\
+          \ processing, such as `errorMessage` on a failed payment: `is` (Icelandic,\
+          \ the default) or `en` (English). Request validation messages are always\
+          \ in English."
+        schema:
+          enum:
+          - "is"
+          - "en"
+          type: "string"
+          default: "is"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CreditTransferResponse"
+            text/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CreditTransferResponse"
+        "400":
+          description: "Bad Request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ValidationProblemDetails"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "404":
+          description: "Not Found"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+  /DirectDebitMandates:
+    get:
+      tags:
+      - "DirectDebitMandates"
+      summary: "Gets a page of direct debit mandates for a claimant."
+      description: "Returns a single page of mandates matching the supplied claimant\
+        \ and optional filters.\r\nUse the `page` and `perPage` query parameters to\
+        \ page through the results;\r\npaging metadata is returned in the response\
+        \ headers. The results cannot be sorted and are\r\nreturned in the order they\
+        \ are stored."
+      operationId: "listDirectDebitMandates"
+      parameters:
+      - name: "claimantNationalId"
+        in: "query"
+        description: "The claimant's national ID (kennitala), provided as ten digits\
+          \ with or without a dash. Required."
+        required: true
+        schema:
+          pattern: "^[0-9]{6}-?[0-9]{4}$"
+          type: "string"
+      - name: "categoryCode"
+        in: "query"
+        description: "Optional filter by mandate category code."
+        schema:
+          type: "string"
+      - name: "payorNationalId"
+        in: "query"
+        description: "Optional filter by the payor's national ID (kennitala), provided\
+          \ as ten digits with or without a dash."
+        schema:
+          pattern: "^[0-9]{6}-?[0-9]{4}$"
+          type: "string"
+      - name: "customerNumber"
+        in: "query"
+        description: "Optional filter by the customer number (payor identifier assigned\
+          \ by the claimant)."
+        schema:
+          type: "string"
+      - name: "Accept-Language"
+        in: "header"
+        description: "The language for human-readable text that originates from payment\
+          \ processing, such as `errorMessage` on a failed payment: `is` (Icelandic,\
+          \ the default) or `en` (English). Request validation messages are always\
+          \ in English."
+        schema:
+          enum:
+          - "is"
+          - "en"
+          type: "string"
+          default: "is"
+      - name: "page"
+        in: "query"
+        description: "The requested page. Defaults to 1 if not specified."
+        allowEmptyValue: true
+        schema:
+          minimum: 1
+          type: "integer"
+          format: "int32"
+          default: 1
+      - name: "perPage"
+        in: "query"
+        description: "The requested page size. Defaults to 100 if not specified. Maximum\
+          \ allowed is 500."
+        allowEmptyValue: true
+        schema:
+          maximum: 500
+          minimum: 1
+          type: "integer"
+          format: "int32"
+          default: 100
+      responses:
+        "200":
+          description: "OK"
+          headers:
+            X-Paging-Page:
+              description: "The current page."
+              schema:
+                type: "integer"
+                format: "int32"
+            X-Paging-PerPage:
+              description: "The current page size."
+              schema:
+                type: "integer"
+                format: "int32"
+            X-Paging-TotalItems:
+              description: "The total items of data available."
+              schema:
+                type: "integer"
+                format: "int32"
+            X-Paging-TotalPages:
+              description: "The total pages of data available."
+              schema:
+                type: "integer"
+                format: "int32"
+            Link:
+              description: "Links for first page, next page, prev page, and last page."
+              schema:
+                type: "string"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: "array"
+                    items:
+                      $ref: "#/components/schemas/MandateResponse"
+                  page:
+                    type: "integer"
+                    description: "The current page."
+                    format: "int32"
+                  perPage:
+                    type: "integer"
+                    description: "The current page size."
+                    format: "int32"
+                  totalItems:
+                    type: "integer"
+                    description: "The total items of data available."
+                    format: "int32"
+                  totalPages:
+                    type: "integer"
+                    description: "The total pages of data available."
+                    format: "int32"
+            text/json:
+              schema:
+                properties:
+                  data:
+                    type: "array"
+                    items:
+                      $ref: "#/components/schemas/MandateResponse"
+                  page:
+                    type: "integer"
+                    description: "The current page."
+                    format: "int32"
+                  perPage:
+                    type: "integer"
+                    description: "The current page size."
+                    format: "int32"
+                  totalItems:
+                    type: "integer"
+                    description: "The total items of data available."
+                    format: "int32"
+                  totalPages:
+                    type: "integer"
+                    description: "The total pages of data available."
+                    format: "int32"
+        "400":
+          description: "Bad Request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ValidationProblemDetails"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+    post:
+      tags:
+      - "DirectDebitMandates"
+      summary: "Creates a new direct debit mandate."
+      operationId: "createDirectDebitMandate"
+      parameters:
+      - name: "Accept-Language"
+        in: "header"
+        description: "The language for human-readable text that originates from payment\
+          \ processing, such as `errorMessage` on a failed payment: `is` (Icelandic,\
+          \ the default) or `en` (English). Request validation messages are always\
+          \ in English."
+        schema:
+          enum:
+          - "is"
+          - "en"
+          type: "string"
+          default: "is"
+      requestBody:
+        description: "The mandate creation request."
+        content:
+          application/json:
+            schema:
+              allOf:
+              - $ref: "#/components/schemas/CreateMandateRequest"
+              description: "Request to create a direct debit mandate."
+              example:
+                categoryCode: "KH"
+                customerNumber: "1505658480"
+                claimantNationalId: "4502692119"
+                payorNationalId: "0101302399"
+                debtorAccount:
+                  bban: "015926007654"
+                  nationalId: "0101302399"
+                validationPeriod:
+                  from: "2026-10-01"
+                  to: "2027-09-30"
+                canBeCancelled: true
+                bank: "0159"
+          text/json:
+            schema:
+              allOf:
+              - $ref: "#/components/schemas/CreateMandateRequest"
+              description: "Request to create a direct debit mandate."
+              example:
+                categoryCode: "KH"
+                customerNumber: "1505658480"
+                claimantNationalId: "4502692119"
+                payorNationalId: "0101302399"
+                debtorAccount:
+                  bban: "015926007654"
+                  nationalId: "0101302399"
+                validationPeriod:
+                  from: "2026-10-01"
+                  to: "2027-09-30"
+                canBeCancelled: true
+                bank: "0159"
+          application/*+json:
+            schema:
+              allOf:
+              - $ref: "#/components/schemas/CreateMandateRequest"
+              description: "Request to create a direct debit mandate."
+              example:
+                categoryCode: "KH"
+                customerNumber: "1505658480"
+                claimantNationalId: "4502692119"
+                payorNationalId: "0101302399"
+                debtorAccount:
+                  bban: "015926007654"
+                  nationalId: "0101302399"
+                validationPeriod:
+                  from: "2026-10-01"
+                  to: "2027-09-30"
+                canBeCancelled: true
+                bank: "0159"
+        required: true
+      responses:
+        "201":
+          description: "The mandate has been created. `Location` points at the mandate."
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/MandateInitiationResponse"
+            text/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/MandateInitiationResponse"
+        "400":
+          description: "Bad Request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ValidationProblemDetails"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+  /DirectDebitMandates/{id}:
+    get:
+      tags:
+      - "DirectDebitMandates"
+      summary: "Gets a direct debit mandate by its ID."
+      operationId: "getDirectDebitMandate"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The mandate ID, as returned when the mandate was created or\
+          \ as listed by `GET /DirectDebitMandates`."
+        required: true
+        schema:
+          type: "string"
+      - name: "Accept-Language"
+        in: "header"
+        description: "The language for human-readable text that originates from payment\
+          \ processing, such as `errorMessage` on a failed payment: `is` (Icelandic,\
+          \ the default) or `en` (English). Request validation messages are always\
+          \ in English."
+        schema:
+          enum:
+          - "is"
+          - "en"
+          type: "string"
+          default: "is"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/MandateResponse"
+            text/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/MandateResponse"
+        "400":
+          description: "Bad Request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ValidationProblemDetails"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "404":
+          description: "Not Found"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+  /DomesticBatches:
+    post:
+      tags:
+      - "DomesticBatches"
+      summary: "Initiates a new domestic payments batch."
+      description: "Returns `201 Created` when `isStp` is true and the batch has been\
+        \ submitted for execution, or `202 Accepted`\r\nwhen `isStp` is false and\
+        \ the batch is stored awaiting approval. Both carry the batch ID and\r\nits\
+        \ initial status in the body, and a `Location` header pointing at the GET\
+        \ endpoint for the batch.\r\n            \r\n`Idempotency-Key` is optional\
+        \ and makes the request safe to retry. A repeat with the same key from the\r\
+        \nsame application to this operation within 24 hours returns the original\
+        \ response instead of creating a\r\nsecond batch; a repeat while the first\
+        \ request is still being processed returns `409 Conflict`.\r\nThe request\
+        \ body is not compared. Use a new key for a different batch."
+      operationId: "createDomesticBatch"
+      parameters:
+      - name: "Idempotency-Key"
+        in: "header"
+        description: "Optional idempotency key; see the operation description."
+        schema:
+          type: "string"
+      - name: "Accept-Language"
+        in: "header"
+        description: "The language for human-readable text that originates from payment\
+          \ processing, such as `errorMessage` on a failed payment: `is` (Icelandic,\
+          \ the default) or `en` (English). Request validation messages are always\
+          \ in English."
+        schema:
+          enum:
+          - "is"
+          - "en"
+          type: "string"
+          default: "is"
+      requestBody:
+        description: "The domestic batch request."
+        content:
+          application/json:
+            schema:
+              allOf:
+              - $ref: "#/components/schemas/DomesticPaymentsBatchRequest"
+              description: "Request to initiate a batch of domestic payments."
+              example:
+                batchName: "Salaries October 2026"
+                isStp: false
+                isAggregate: false
+                rollbackOnError: true
+                debtorAccount:
+                  bban: "015926007654"
+                  nationalId: "0101302399"
+                paymentDate: "2026-10-01"
+                creditTransfers:
+                - instructedAmount:
+                    amount: 450000
+                    currency: "ISK"
+                  creditorAccount:
+                    bban: "010826123456"
+                    nationalId: "4502692119"
+                  remittanceInformationUnstructured: "Salary October 2026"
+                  debtorReference: "SAL-2026-10-001"
+                claims:
+                - instructedAmount:
+                    amount: 25000
+                    currency: "ISK"
+                  claim:
+                    claimNumber: "053026000001"
+                    claimantNationalId: "4502692119"
+          text/json:
+            schema:
+              allOf:
+              - $ref: "#/components/schemas/DomesticPaymentsBatchRequest"
+              description: "Request to initiate a batch of domestic payments."
+              example:
+                batchName: "Salaries October 2026"
+                isStp: false
+                isAggregate: false
+                rollbackOnError: true
+                debtorAccount:
+                  bban: "015926007654"
+                  nationalId: "0101302399"
+                paymentDate: "2026-10-01"
+                creditTransfers:
+                - instructedAmount:
+                    amount: 450000
+                    currency: "ISK"
+                  creditorAccount:
+                    bban: "010826123456"
+                    nationalId: "4502692119"
+                  remittanceInformationUnstructured: "Salary October 2026"
+                  debtorReference: "SAL-2026-10-001"
+                claims:
+                - instructedAmount:
+                    amount: 25000
+                    currency: "ISK"
+                  claim:
+                    claimNumber: "053026000001"
+                    claimantNationalId: "4502692119"
+          application/*+json:
+            schema:
+              allOf:
+              - $ref: "#/components/schemas/DomesticPaymentsBatchRequest"
+              description: "Request to initiate a batch of domestic payments."
+              example:
+                batchName: "Salaries October 2026"
+                isStp: false
+                isAggregate: false
+                rollbackOnError: true
+                debtorAccount:
+                  bban: "015926007654"
+                  nationalId: "0101302399"
+                paymentDate: "2026-10-01"
+                creditTransfers:
+                - instructedAmount:
+                    amount: 450000
+                    currency: "ISK"
+                  creditorAccount:
+                    bban: "010826123456"
+                    nationalId: "4502692119"
+                  remittanceInformationUnstructured: "Salary October 2026"
+                  debtorReference: "SAL-2026-10-001"
+                claims:
+                - instructedAmount:
+                    amount: 25000
+                    currency: "ISK"
+                  claim:
+                    claimNumber: "053026000001"
+                    claimantNationalId: "4502692119"
+        required: true
+      responses:
+        "201":
+          description: "The batch has been submitted for execution (`isStp` true).\
+            \ `Location` points at the batch."
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/BatchInitiationResponse"
+            text/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/BatchInitiationResponse"
+        "202":
+          description: "The batch is stored and awaits approval before it is executed\
+            \ (`isStp` false). `Location` points at the batch."
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/BatchInitiationResponse"
+            text/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/BatchInitiationResponse"
+        "400":
+          description: "Bad Request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ValidationProblemDetails"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "409":
+          description: "A request with the same `Idempotency-Key` is still being processed;\
+            \ retry after it completes."
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+  /DomesticBatches/{id}:
+    get:
+      tags:
+      - "DomesticBatches"
+      summary: "Gets a domestic batch by its ID."
+      operationId: "getDomesticBatch"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The ID returned from the POST endpoint."
+        required: true
+        schema:
+          type: "string"
+      - name: "Accept-Language"
+        in: "header"
+        description: "The language for human-readable text that originates from payment\
+          \ processing, such as `errorMessage` on a failed payment: `is` (Icelandic,\
+          \ the default) or `en` (English). Request validation messages are always\
+          \ in English."
+        schema:
+          enum:
+          - "is"
+          - "en"
+          type: "string"
+          default: "is"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/BatchResponse"
+            text/json:
+              schema:
+                properties:
+                  data:
+                    $ref: "#/components/schemas/BatchResponse"
+        "400":
+          description: "Bad Request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ValidationProblemDetails"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "404":
+          description: "Not Found"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+  /DomesticBatches/{id}/Payments:
+    get:
+      tags:
+      - "DomesticBatches"
+      summary: "Gets the individual payments of a domestic batch."
+      description: "Returns every payment in the batch as a single list. Each item\
+        \ carries a `type`\r\ndiscriminator (`creditTransfer` or `claimPayment`) that\
+        \ identifies\r\nits payment type and which type-specific fields are present.\
+        \ The response is not paged;\r\nuse `status` to narrow the result. Send `Accept-Language`\
+        \ (`is` or `en`) to\r\nreceive `errorMessage` in that language; Icelandic\
+        \ is the default. A payment's `id` is\r\nassigned when it is processed, so\
+        \ items in a batch that is awaiting approval or scheduled have no\r\n`id`\
+        \ yet."
+      operationId: "listDomesticBatchPayments"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The batch ID."
+        required: true
+        schema:
+          type: "string"
+      - name: "status"
+        in: "query"
+        description: "Filter for the payments to return (all, success or error). Defaults\
+          \ to all."
+        schema:
+          allOf:
+          - $ref: "#/components/schemas/BatchPaymentStatusFilter"
+          description: "Filter for the payments returned by GET /DomesticBatches/{id}/Payments."
+          default: "all"
+      - name: "Accept-Language"
+        in: "header"
+        description: "The language for human-readable text that originates from payment\
+          \ processing, such as `errorMessage` on a failed payment: `is` (Icelandic,\
+          \ the default) or `en` (English). Request validation messages are always\
+          \ in English."
+        schema:
+          enum:
+          - "is"
+          - "en"
+          type: "string"
+          default: "is"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                properties:
+                  data:
+                    type: "array"
+                    items:
+                      oneOf:
+                      - $ref: "#/components/schemas/BatchCreditTransferPaymentResponse"
+                      - $ref: "#/components/schemas/BatchClaimPaymentResponse"
+                      description: "A single payment within a batch. The `type` discriminator\
+                        \ identifies the payment type\r\n(`creditTransfer` or `claimPayment`)\
+                        \ and which type-specific fields are present."
+            text/json:
+              schema:
+                properties:
+                  data:
+                    type: "array"
+                    items:
+                      oneOf:
+                      - $ref: "#/components/schemas/BatchCreditTransferPaymentResponse"
+                      - $ref: "#/components/schemas/BatchClaimPaymentResponse"
+                      description: "A single payment within a batch. The `type` discriminator\
+                        \ identifies the payment type\r\n(`creditTransfer` or `claimPayment`)\
+                        \ and which type-specific fields are present."
+        "400":
+          description: "Bad Request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ValidationProblemDetails"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "404":
+          description: "Not Found"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetails"
+components:
+  schemas:
+    AccountIdentification:
+      type: "object"
+      properties:
+        iban:
+          type: "string"
+          description: "International Bank Account Number."
+          nullable: true
+        bban:
+          type: "string"
+          description: "Basic Bank Account Number, the domestic account number format."
+          nullable: true
+        nationalId:
+          pattern: "^[0-9]{6}-?[0-9]{4}$"
+          type: "string"
+          description: "The account holder's national ID (kennitala), provided as\
+            \ ten digits with or without a dash.\r\nRequired when the account is identified\
+            \ by BBAN without an IBAN."
+          nullable: true
+      additionalProperties: false
+      description: "Identifies an Icelandic account by IBAN or BBAN together with\
+        \ the account holder's national ID\r\n(kennitala). Domestic payments generally\
+        \ use a BBAN, in which case the national ID is required;\r\nan Icelandic IBAN\
+        \ may be supplied instead and is converted to its BBAN. Either an IBAN or\
+        \ a BBAN\r\nmust be provided."
+    AccountIdentificationResponse:
+      type: "object"
+      properties:
+        bban:
+          type: "string"
+          description: "Basic Bank Account Number (Icelandic format)."
+          nullable: true
+        iban:
+          type: "string"
+          description: "International Bank Account Number."
+          nullable: true
+        nationalId:
+          pattern: "^[0-9]{10}$"
+          type: "string"
+          description: "The account holder's national ID (kennitala), returned as\
+            \ ten digits without a dash."
+          nullable: true
+        name:
+          type: "string"
+          description: "Account holder's name. Optional; only populated on batch payment\
+            \ creditor accounts."
+          nullable: true
+      additionalProperties: false
+      description: "Shared account identification for responses: BBAN, IBAN and national\
+        \ ID (kennitala),\r\nplus an optional account holder name. The account holder\
+        \ name is only populated\r\non batch payment creditor accounts; it is left\
+        \ null for all other payment types."
+    BatchClaimPaymentResponse:
+      allOf:
+      - $ref: "#/components/schemas/BatchPaymentResponse"
+      - required:
+        - "principalAmount"
+        type: "object"
+        properties:
+          principalAmount:
+            allOf:
+            - $ref: "#/components/schemas/Money"
+            description: "The principal amount (instructed amount minus the claim\
+              \ cost breakdown total). Carries the\r\ncurrency of the instructed amount;\
+              \ ISK when that is not available."
+          claim:
+            allOf:
+            - $ref: "#/components/schemas/ClaimResponse"
+            description: "The claim that was paid."
+            nullable: true
+        additionalProperties: false
+      description: "Response model for a single claim payment within a batch."
+      example:
+        type: "claimPayment"
+        principalAmount:
+          amount: 24500
+          currency: "ISK"
+        claim:
+          claimNumber: "053026000001"
+          claimantNationalId: "4502692119"
+          dueDate: "2026-10-01"
+          isPartialPayment: false
+          costBreakdown:
+            totalAmount: 500
+            noticeAndPaymentFeePaid: 500
+            defaultChargePaid: 0
+            otherCostPaid: 0
+            otherDefaultCostPaid: 0
+            defaultInterestPaid: 0
+            discountGiven: 0
+        id: "sandbox-pay-005"
+        status: "rejected"
+        errorSubject: "Claim"
+        errorMessage: "Krafan er þegar greidd."
+        instructedAmount:
+          amount: 25000
+          currency: "ISK"
+        paymentDate: "2026-10-01"
+        debtorAccount:
+          bban: "015926007654"
+          nationalId: "0101302399"
+    BatchCreditTransferPaymentResponse:
+      allOf:
+      - $ref: "#/components/schemas/BatchPaymentResponse"
+      - type: "object"
+        properties:
+          creditorAccount:
+            allOf:
+            - $ref: "#/components/schemas/AccountIdentificationResponse"
+            description: "The creditor's account details."
+            nullable: true
+          ultimateDebtor:
+            allOf:
+            - $ref: "#/components/schemas/UltimateParty"
+            description: "Ultimate debtor party information."
+            nullable: true
+          ultimateCreditor:
+            allOf:
+            - $ref: "#/components/schemas/UltimateParty"
+            description: "Ultimate creditor party information."
+            nullable: true
+          exchangeRate:
+            allOf:
+            - $ref: "#/components/schemas/ExchangeRateResponse"
+            description: "Exchange rate information if applicable."
+            nullable: true
+        additionalProperties: false
+      description: "Response model for a single credit transfer payment within a batch."
+      example:
+        type: "creditTransfer"
+        creditorAccount:
+          bban: "010826123456"
+          nationalId: "4502692119"
+        id: "sandbox-pay-004"
+        status: "completed"
+        instructedAmount:
+          amount: 450000
+          currency: "ISK"
+        paymentDate: "2026-10-01"
+        remittanceInformationUnstructured: "Salary October 2026"
+        debtorReference: "SAL-2026-10-001"
+        debtorAccount:
+          bban: "015926007654"
+          nationalId: "0101302399"
+    BatchInitiationResponse:
+      required:
+      - "id"
+      - "status"
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          description: "The identifier used to retrieve the batch."
+        status:
+          allOf:
+          - $ref: "#/components/schemas/BatchStatus"
+          description: "The initial status of the batch."
+      additionalProperties: false
+      description: "The identifier and initial status returned after batch initiation."
+      example:
+        id: "LB0000123"
+        status: "pendingApproval"
+    BatchPaymentResponse:
+      required:
+      - "status"
+      - "type"
+      type: "object"
+      properties:
+        type:
+          type: "string"
+          description: "Discriminator identifying the payment type: `creditTransfer`\
+            \ or `claimPayment`."
+          readOnly: true
+        id:
+          type: "string"
+          description: "The payment identifier, usable with the corresponding `GET\
+            \ /CreditTransfers/{id}` or\r\n`GET /ClaimPayments/{id}`. Null until the\
+            \ payment has been processed: payments in a batch that\r\nis awaiting\
+            \ approval or scheduled have no identifier yet."
+          nullable: true
+        status:
+          allOf:
+          - $ref: "#/components/schemas/PaymentStatus"
+          description: "Current status of the payment."
+        errorSubject:
+          type: "string"
+          description: "Error subject when the payment failed."
+          nullable: true
+        errorMessage:
+          type: "string"
+          description: "Human-readable error message when the payment failed, in the\
+            \ language requested with the\r\n`Accept-Language` header (Icelandic by\
+            \ default)."
+          nullable: true
+        instructedAmount:
+          allOf:
+          - $ref: "#/components/schemas/Money"
+          description: "The instructed amount and currency."
+          nullable: true
+        paymentDate:
+          type: "string"
+          description: "The requested payment date."
+          format: "date"
+          nullable: true
+        categoryCode:
+          type: "string"
+          description: "Payment category code."
+          nullable: true
+        remittanceInformationUnstructured:
+          maxLength: 140
+          type: "string"
+          description: "Unstructured remittance information."
+          nullable: true
+        endToEndIdentification:
+          maxLength: 35
+          type: "string"
+          description: "End-to-end identification provided by the initiating party."
+          nullable: true
+        debtorReference:
+          maxLength: 16
+          type: "string"
+          description: "Debtor reference for reconciliation. Maximum 16 characters."
+          nullable: true
+        debtorAccount:
+          allOf:
+          - $ref: "#/components/schemas/AccountIdentificationResponse"
+          description: "The debtor's account details."
+          nullable: true
+      additionalProperties: false
+      description: "A single payment within a batch. The `type` discriminator identifies\
+        \ the payment type\r\n(`creditTransfer` or `claimPayment`) and which type-specific\
+        \ fields are present."
+      discriminator:
+        propertyName: "type"
+        mapping:
+          creditTransfer: "#/components/schemas/BatchCreditTransferPaymentResponse"
+          claimPayment: "#/components/schemas/BatchClaimPaymentResponse"
+    BatchPaymentStatusFilter:
+      enum:
+      - "all"
+      - "success"
+      - "error"
+      type: "string"
+      description: "Filter for the payments returned by GET /DomesticBatches/{id}/Payments."
+    BatchResponse:
+      required:
+      - "errorPaymentCount"
+      - "id"
+      - "isAggregate"
+      - "isStp"
+      - "paidPaymentCount"
+      - "status"
+      - "suspendedPaymentCount"
+      - "totalAmount"
+      - "totalPaymentCount"
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          description: "Unique identifier for the batch."
+        batchName:
+          type: "string"
+          description: "Human-readable batch name."
+          nullable: true
+        isStp:
+          type: "boolean"
+          description: "Straight-through processing flag."
+        isAggregate:
+          type: "boolean"
+          description: "Indicates if this is an aggregate batch."
+        paymentDate:
+          type: "string"
+          description: "The requested payment date for the batch."
+          format: "date"
+          nullable: true
+        status:
+          allOf:
+          - $ref: "#/components/schemas/BatchStatus"
+          description: "Current status of the batch."
+        totalAmount:
+          allOf:
+          - $ref: "#/components/schemas/Money"
+          description: "The total amount of all payments in the batch."
+        amountPaid:
+          allOf:
+          - $ref: "#/components/schemas/Money"
+          description: "The amount paid so far (sum of successfully executed payments)."
+          nullable: true
+        totalAmountToBePaid:
+          allOf:
+          - $ref: "#/components/schemas/Money"
+          description: "The total amount yet to be paid."
+          nullable: true
+        totalPaymentCount:
+          type: "integer"
+          description: "Total number of payments in the batch."
+          format: "int32"
+        paidPaymentCount:
+          type: "integer"
+          description: "Number of payments successfully paid."
+          format: "int32"
+        errorPaymentCount:
+          type: "integer"
+          description: "Number of payments that failed with an error."
+          format: "int32"
+        suspendedPaymentCount:
+          type: "integer"
+          description: "Number of payments that are suspended."
+          format: "int32"
+        debtorAccount:
+          allOf:
+          - $ref: "#/components/schemas/AccountIdentificationResponse"
+          description: "The debtor's account details."
+          nullable: true
+      additionalProperties: false
+      description: "Details and current processing status of a payment batch."
+      example:
+        id: "LB0000123"
+        batchName: "Salaries October 2026"
+        isStp: false
+        isAggregate: false
+        paymentDate: "2026-10-01"
+        status: "processing"
+        totalAmount:
+          amount: 475000
+          currency: "ISK"
+        amountPaid:
+          amount: 450000
+          currency: "ISK"
+        totalAmountToBePaid:
+          amount: 25000
+          currency: "ISK"
+        totalPaymentCount: 2
+        paidPaymentCount: 1
+        errorPaymentCount: 0
+        suspendedPaymentCount: 0
+        debtorAccount:
+          bban: "015926007654"
+          nationalId: "0101302399"
+    BatchStatus:
+      enum:
+      - "created"
+      - "pendingApproval"
+      - "pending"
+      - "processing"
+      - "completed"
+      - "cancelled"
+      - "rejected"
+      - "suspended"
+      type: "string"
+      description: "The processing status of a payment batch.\r\n`created`: created,\
+        \ not yet submitted. `pendingApproval`: stored, awaits approval before it\
+        \ is executed.\r\n`pending`: scheduled, waiting to be executed. `processing`:\
+        \ payments are being executed. `suspended`: processing paused.\r\n`completed`:\
+        \ every payment has been processed. `cancelled`: cancelled before execution.\
+        \ `rejected`: refused."
+    Card:
+      required:
+      - "cardNumber"
+      type: "object"
+      properties:
+        cardNumber:
+          pattern: "^(\\d{16,19}|\\d{6}\\*{6,}\\d{4})$"
+          type: "string"
+          description: "The card number (PAN), 16-19 digits, or a masked card number\
+            \ (e.g. 6 digits, asterisks, last 4 digits)."
+        nationalId:
+          pattern: "^[0-9]{6}-?[0-9]{4}$"
+          type: "string"
+          description: "The cardholder's national ID (kennitala), provided as ten\
+            \ digits with or without a dash.\r\nRequired when a masked card number\
+            \ is supplied and no card ID is provided."
+          nullable: true
+        cardId:
+          type: "string"
+          description: "The card identifier. May be supplied instead of the national\
+            \ ID when a masked card number is used."
+          nullable: true
+      additionalProperties: false
+      description: "The card that receives a card deposit."
+    CardDepositRequest:
+      required:
+      - "card"
+      - "debtorAccount"
+      - "instructedAmount"
+      - "isStp"
+      type: "object"
+      properties:
+        isStp:
+          type: "boolean"
+          description: "Straight-through processing flag. When true, bypasses manual\
+            \ approval."
+        endToEndIdentification:
+          maxLength: 35
+          type: "string"
+          description: "Client-provided reference that identifies the payment end\
+            \ to end."
+          nullable: true
+        debtorAccount:
+          allOf:
+          - $ref: "#/components/schemas/AccountIdentification"
+          description: "Account from which the deposit is debited."
+        card:
+          allOf:
+          - $ref: "#/components/schemas/Card"
+          description: "Card that receives the deposit."
+        instructedAmount:
+          allOf:
+          - $ref: "#/components/schemas/Money"
+          description: "Amount and currency of the deposit."
+        categoryCode:
+          type: "string"
+          description: "Payment category code."
+          nullable: true
+        remittanceInformationUnstructured:
+          maxLength: 140
+          type: "string"
+          description: "Additional unstructured information for the payment recipient."
+          nullable: true
+        paymentDate:
+          type: "string"
+          description: "Date on which the payment should be made."
+          format: "date"
+          nullable: true
+        ultimateDebtor:
+          allOf:
+          - $ref: "#/components/schemas/UltimateParty"
+          description: "Ultimate debtor, when different from the account holder."
+          nullable: true
+      additionalProperties: false
+      description: "Request to initiate a deposit to a payment card."
+      example:
+        isStp: true
+        debtorAccount:
+          bban: "015926007654"
+          nationalId: "0101302399"
+        card:
+          cardNumber: "4111111111111111"
+        instructedAmount:
+          amount: 10000
+          currency: "ISK"
+        remittanceInformationUnstructured: "Card top-up"
+    CardDepositResponse:
+      required:
+      - "card"
+      - "debtorAccount"
+      - "id"
+      - "instructedAmount"
+      - "status"
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          description: "Unique identifier for the payment."
+        status:
+          allOf:
+          - $ref: "#/components/schemas/PaymentStatus"
+          description: "Current status of the payment."
+        paymentDate:
+          type: "string"
+          description: "The requested payment date."
+          format: "date"
+          nullable: true
+        instructedAmount:
+          allOf:
+          - $ref: "#/components/schemas/Money"
+          description: "The instructed amount and currency."
+        debtorAccount:
+          allOf:
+          - $ref: "#/components/schemas/AccountIdentificationResponse"
+          description: "The debtor's account details."
+        card:
+          allOf:
+          - $ref: "#/components/schemas/CardResponse"
+          description: "The card receiving the deposit."
+        exchangeRate:
+          allOf:
+          - $ref: "#/components/schemas/ExchangeRateResponse"
+          description: "Exchange rate information if applicable."
+          nullable: true
+        endToEndIdentification:
+          maxLength: 35
+          type: "string"
+          description: "End-to-end identification provided by the initiating party."
+          nullable: true
+        categoryCode:
+          type: "string"
+          description: "Payment category code."
+          nullable: true
+        remittanceInformationUnstructured:
+          maxLength: 140
+          type: "string"
+          description: "Unstructured remittance information."
+          nullable: true
+        debtorReference:
+          maxLength: 16
+          type: "string"
+          description: "Debtor reference for reconciliation. Maximum 16 characters."
+          nullable: true
+        ultimateDebtor:
+          allOf:
+          - $ref: "#/components/schemas/UltimateParty"
+          description: "Ultimate debtor party information."
+          nullable: true
+      additionalProperties: false
+      description: "Response model for GET /CardDeposits/{id} endpoint."
+      example:
+        id: "sandbox-pay-003"
+        status: "completed"
+        paymentDate: "2026-10-01"
+        instructedAmount:
+          amount: 10000
+          currency: "ISK"
+        debtorAccount:
+          bban: "015926007654"
+          nationalId: "0101302399"
+        card:
+          cardNumber: "411111******1111"
+          nationalId: "0101302399"
+        remittanceInformationUnstructured: "Card top-up"
+    CardResponse:
+      type: "object"
+      properties:
+        cardNumber:
+          type: "string"
+          description: "Masked card number (PAN) as returned by the card issuer."
+          nullable: true
+        nationalId:
+          pattern: "^[0-9]{10}$"
+          type: "string"
+          description: "Card holder's national ID (kennitala), returned as ten digits\
+            \ without a dash."
+          nullable: true
+      additionalProperties: false
+      description: "Response model for card details."
+    Claim:
+      required:
+      - "claimNumber"
+      type: "object"
+      properties:
+        claimNumber:
+          pattern: "^[0-9]{12}$"
+          type: "string"
+          description: "The claim number: exactly 12 digits. Required for claim payments."
+        claimantNationalId:
+          pattern: "^[0-9]{6}-?[0-9]{4}$"
+          type: "string"
+          description: "The claimant's national ID (kennitala), provided as ten digits\
+            \ with or without a dash."
+          nullable: true
+        dueDate:
+          type: "string"
+          description: "The due date of the claim."
+          format: "date"
+          nullable: true
+        isPartialPayment:
+          type: "boolean"
+          description: "Indicates whether this is a partial payment of the claim."
+          nullable: true
+      additionalProperties: false
+      description: "The claim being paid. Identified by its claim number and, optionally,\
+        \ the claimant's national ID."
+    ClaimBatchPaymentElement:
+      required:
+      - "claim"
+      - "instructedAmount"
+      type: "object"
+      properties:
+        endToEndIdentification:
+          maxLength: 35
+          type: "string"
+          description: "Client-provided reference that identifies the payment end\
+            \ to end."
+          nullable: true
+        instructedAmount:
+          allOf:
+          - $ref: "#/components/schemas/Money"
+          description: "Amount and currency of the payment."
+        debtorAccount:
+          allOf:
+          - $ref: "#/components/schemas/AccountIdentification"
+          description: "Account from which the payment is debited. Overrides the batch\
+            \ default when provided."
+          nullable: true
+        claim:
+          allOf:
+          - $ref: "#/components/schemas/Claim"
+          description: "Claim to be paid."
+        remittanceInformationUnstructured:
+          maxLength: 140
+          type: "string"
+          description: "Additional unstructured information for the payment recipient."
+          nullable: true
+      additionalProperties: false
+      description: "A single domestic claim payment within a batch."
+    ClaimPaymentRequest:
+      required:
+      - "claim"
+      - "debtorAccount"
+      - "instructedAmount"
+      - "isStp"
+      type: "object"
+      properties:
+        isStp:
+          type: "boolean"
+          description: "Straight-through processing flag. When true, bypasses manual\
+            \ approval."
+        endToEndIdentification:
+          maxLength: 35
+          type: "string"
+          description: "Client-provided reference that identifies the payment end\
+            \ to end."
+          nullable: true
+        debtorAccount:
+          allOf:
+          - $ref: "#/components/schemas/AccountIdentification"
+          description: "Account from which the claim payment is debited."
+        claim:
+          allOf:
+          - $ref: "#/components/schemas/Claim"
+          description: "Claim to be paid."
+        instructedAmount:
+          allOf:
+          - $ref: "#/components/schemas/Money"
+          description: "Amount and currency of the claim payment."
+        categoryCode:
+          type: "string"
+          description: "Payment category code."
+          nullable: true
+        remittanceInformationUnstructured:
+          maxLength: 140
+          type: "string"
+          description: "Additional unstructured information for the payment recipient."
+          nullable: true
+        debtorReference:
+          maxLength: 16
+          type: "string"
+          description: "Reference supplied by the debtor for reconciliation. Maximum\
+            \ 16 characters."
+          nullable: true
+        paymentDate:
+          type: "string"
+          description: "Date on which the payment should be made."
+          format: "date"
+          nullable: true
+      additionalProperties: false
+      description: "Request to initiate a payment of an Icelandic claim."
+      example:
+        isStp: true
+        debtorAccount:
+          bban: "015926007654"
+          nationalId: "0101302399"
+        claim:
+          claimNumber: "053026000001"
+          claimantNationalId: "4502692119"
+          dueDate: "2026-10-01"
+          isPartialPayment: false
+        instructedAmount:
+          amount: 25000
+          currency: "ISK"
+        debtorReference: "CLAIM-2026-118"
+    ClaimPaymentResponse:
+      required:
+      - "debtorAccount"
+      - "id"
+      - "instructedAmount"
+      - "isDirectDebit"
+      - "status"
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          description: "The unique payment identifier."
+        status:
+          allOf:
+          - $ref: "#/components/schemas/PaymentStatus"
+          description: "Current status of the payment."
+        paymentDate:
+          type: "string"
+          description: "The requested payment date."
+          format: "date"
+          nullable: true
+        instructedAmount:
+          allOf:
+          - $ref: "#/components/schemas/Money"
+          description: "The instructed payment amount and currency."
+        debtorAccount:
+          allOf:
+          - $ref: "#/components/schemas/AccountIdentificationResponse"
+          description: "The debtor account details."
+        claim:
+          allOf:
+          - $ref: "#/components/schemas/ClaimResponse"
+          description: "The claim details, when available."
+          nullable: true
+        principalAmount:
+          allOf:
+          - $ref: "#/components/schemas/Money"
+          description: "The principal amount: the instructed amount minus the claim\
+            \ costs. Carries the currency of the\r\ninstructed amount. Null when not\
+            \ yet known."
+          nullable: true
+        isDirectDebit:
+          type: "boolean"
+          description: "Whether the payment is a direct debit."
+        categoryCode:
+          type: "string"
+          description: "The payment category code."
+          nullable: true
+        debtorReference:
+          maxLength: 16
+          type: "string"
+          description: "The debtor reference used for reconciliation. Maximum 16 characters."
+          nullable: true
+        endToEndIdentification:
+          maxLength: 35
+          type: "string"
+          description: "The end-to-end payment identification."
+          nullable: true
+        remittanceInformationUnstructured:
+          maxLength: 140
+          type: "string"
+          description: "Unstructured remittance information."
+          nullable: true
+        ultimateDebtor:
+          allOf:
+          - $ref: "#/components/schemas/UltimateParty"
+          description: "The ultimate debtor details, when available."
+          nullable: true
+      additionalProperties: false
+      description: "Details and current processing status of a claim payment."
+      example:
+        id: "sandbox-pay-002"
+        status: "completed"
+        paymentDate: "2026-10-01"
+        instructedAmount:
+          amount: 25000
+          currency: "ISK"
+        debtorAccount:
+          bban: "015926007654"
+          nationalId: "0101302399"
+        claim:
+          claimNumber: "053026000001"
+          claimantNationalId: "4502692119"
+          payorNationalId: "0101302399"
+          dueDate: "2026-10-01"
+          finalDueDate: "2026-10-15"
+          isPartialPayment: false
+          costBreakdown:
+            totalAmount: 500
+            noticeAndPaymentFeePaid: 500
+            defaultChargePaid: 0
+            otherCostPaid: 0
+            otherDefaultCostPaid: 0
+            defaultInterestPaid: 0
+            discountGiven: 0
+        principalAmount:
+          amount: 24500
+          currency: "ISK"
+        isDirectDebit: false
+        debtorReference: "CLAIM-2026-118"
+    ClaimResponse:
+      required:
+      - "claimNumber"
+      type: "object"
+      properties:
+        claimNumber:
+          pattern: "^[0-9]{12}$"
+          type: "string"
+          description: "The claim number: exactly 12 digits."
+        claimantNationalId:
+          pattern: "^[0-9]{10}$"
+          type: "string"
+          description: "The national ID (kennitala) of the organisation or person\
+            \ that issued the claim, returned as ten digits without a dash."
+          nullable: true
+        payorNationalId:
+          pattern: "^[0-9]{10}$"
+          type: "string"
+          description: "The national ID (kennitala) of the party the claim is addressed\
+            \ to, returned as ten digits without a dash."
+          nullable: true
+        dueDate:
+          type: "string"
+          description: "The original due date of the claim."
+          format: "date"
+          nullable: true
+        finalDueDate:
+          type: "string"
+          description: "The final date on which the claim can be paid without further\
+            \ action."
+          format: "date"
+          nullable: true
+        isPartialPayment:
+          type: "boolean"
+          description: "Whether the payment covers only part of the claim amount."
+          nullable: true
+        costBreakdown:
+          allOf:
+          - $ref: "#/components/schemas/CostBreakdownResponse"
+          description: "Breakdown of fees, interest, discounts, and other costs included\
+            \ in the claim payment."
+          nullable: true
+      additionalProperties: false
+      description: "The claim that a claim payment pays. Returned on `GET /ClaimPayments/{id}`\
+        \ and on each\r\nclaim payment item of `GET /DomesticBatches/{id}/Payments`.\
+        \ Fields that are not available\r\nfor a given payment are null; a payment\
+        \ within a batch carries no `finalDueDate` or\r\n`payorNationalId`."
+    CostBreakdownResponse:
+      required:
+      - "defaultChargePaid"
+      - "defaultInterestPaid"
+      - "discountGiven"
+      - "noticeAndPaymentFeePaid"
+      - "otherCostPaid"
+      - "otherDefaultCostPaid"
+      - "totalAmount"
+      type: "object"
+      properties:
+        totalAmount:
+          type: "number"
+          description: "Total amount of the claim costs."
+          format: "double"
+        noticeAndPaymentFeePaid:
+          type: "number"
+          description: "Fee charged for notifying and paying the claim."
+          format: "double"
+        defaultChargePaid:
+          type: "number"
+          description: "Default charge applied to the claim."
+          format: "double"
+        otherCostPaid:
+          type: "number"
+          description: "Other costs charged as part of the claim payment."
+          format: "double"
+        otherDefaultCostPaid:
+          type: "number"
+          description: "Other default-related costs charged as part of the claim payment."
+          format: "double"
+        defaultInterestPaid:
+          type: "number"
+          description: "Default interest charged on the claim."
+          format: "double"
+        discountGiven:
+          type: "number"
+          description: "Discount deducted from the claim costs."
+          format: "double"
+      additionalProperties: false
+      description: "Breakdown of the costs included in a claim payment."
+    CreateMandateRequest:
+      required:
+      - "categoryCode"
+      - "claimantNationalId"
+      - "customerNumber"
+      - "debtorAccount"
+      - "payorNationalId"
+      type: "object"
+      properties:
+        categoryCode:
+          pattern: "^[A-Z0-9ÁÉÍÓÚÝÐÞÆÖ]{2}$"
+          type: "string"
+          description: "Mandate category code (two characters, upper-case A–Z, digits\
+            \ or Icelandic letters)."
+        customerNumber:
+          maxLength: 16
+          type: "string"
+          description: "Claimant-specific payor identifier (e.g. meter number, license\
+            \ plate, loan number).\r\nMaximum 16 characters."
+        claimantNationalId:
+          pattern: "^[0-9]{6}-?[0-9]{4}$"
+          type: "string"
+          description: "The claimant's national ID (kennitala), provided as ten digits\
+            \ with or without a dash."
+        payorNationalId:
+          pattern: "^[0-9]{6}-?[0-9]{4}$"
+          type: "string"
+          description: "The payor's national ID (kennitala), provided as ten digits\
+            \ with or without a dash."
+        debtorAccount:
+          allOf:
+          - $ref: "#/components/schemas/AccountIdentification"
+          description: "Account from which payments are withdrawn. Supply an Icelandic\
+            \ IBAN, or a 12-digit BBAN\r\ntogether with the account holder's national\
+            \ ID."
+        type:
+          allOf:
+          - $ref: "#/components/schemas/MandateType"
+          description: "Optional mandate type. Defaults to `ikClaim` when omitted."
+          nullable: true
+        validationPeriod:
+          allOf:
+          - $ref: "#/components/schemas/DateRange"
+          description: "Optional validity period of the mandate."
+          nullable: true
+        canBeCancelled:
+          type: "boolean"
+          description: "Whether the payor may cancel or update the mandate. Defaults\
+            \ to `true` when omitted."
+          nullable: true
+        bank:
+          pattern: "^[0-9]{4}$"
+          type: "string"
+          description: "Optional claimant bank/branch number (4 digits)."
+          nullable: true
+      additionalProperties: false
+      description: "Request to create a direct debit mandate."
+      example:
+        categoryCode: "KH"
+        customerNumber: "1505658480"
+        claimantNationalId: "4502692119"
+        payorNationalId: "0101302399"
+        debtorAccount:
+          bban: "015926007654"
+          nationalId: "0101302399"
+        validationPeriod:
+          from: "2026-10-01"
+          to: "2027-09-30"
+        canBeCancelled: true
+        bank: "0159"
+    CreditTransferBatchPaymentElement:
+      required:
+      - "creditorAccount"
+      - "instructedAmount"
+      type: "object"
+      properties:
+        endToEndIdentification:
+          maxLength: 35
+          type: "string"
+          description: "Client-provided reference that identifies the payment end\
+            \ to end."
+          nullable: true
+        instructedAmount:
+          allOf:
+          - $ref: "#/components/schemas/Money"
+          description: "Amount and currency of the payment."
+        debtorAccount:
+          allOf:
+          - $ref: "#/components/schemas/AccountIdentification"
+          description: "Account from which the payment is debited. Overrides the batch\
+            \ default when provided."
+          nullable: true
+        creditorAccount:
+          allOf:
+          - $ref: "#/components/schemas/AccountIdentification"
+          description: "Account to which the payment is credited."
+        remittanceInformationUnstructured:
+          maxLength: 140
+          type: "string"
+          description: "Additional unstructured information for the payment recipient."
+          nullable: true
+        debtorReference:
+          maxLength: 16
+          type: "string"
+          description: "Reference supplied by the debtor for reconciliation. Maximum\
+            \ 16 characters."
+          nullable: true
+        categoryCode:
+          type: "string"
+          description: "Payment category code."
+          nullable: true
+      additionalProperties: false
+      description: "A single domestic credit transfer within a batch."
+    CreditTransferRequest:
+      required:
+      - "creditorAccount"
+      - "debtorAccount"
+      - "instructedAmount"
+      - "isStp"
+      type: "object"
+      properties:
+        isStp:
+          type: "boolean"
+          description: "Straight-through processing flag. When true, bypasses manual\
+            \ approval."
+        endToEndIdentification:
+          maxLength: 35
+          type: "string"
+          description: "Client-provided reference that identifies the payment end\
+            \ to end."
+          nullable: true
+        debtorAccount:
+          allOf:
+          - $ref: "#/components/schemas/AccountIdentification"
+          description: "Account from which the payment is debited."
+        creditorAccount:
+          allOf:
+          - $ref: "#/components/schemas/AccountIdentification"
+          description: "Account to which the payment is credited."
+        instructedAmount:
+          allOf:
+          - $ref: "#/components/schemas/Money"
+          description: "Amount and currency of the transfer."
+        ultimateDebtor:
+          allOf:
+          - $ref: "#/components/schemas/UltimateParty"
+          description: "Ultimate debtor, when different from the account holder."
+          nullable: true
+        ultimateCreditor:
+          allOf:
+          - $ref: "#/components/schemas/UltimateParty"
+          description: "Ultimate creditor, when different from the account holder."
+          nullable: true
+        categoryCode:
+          type: "string"
+          description: "Payment category code."
+          nullable: true
+        remittanceInformationUnstructured:
+          maxLength: 140
+          type: "string"
+          description: "Additional unstructured information for the payment recipient."
+          nullable: true
+        debtorReference:
+          maxLength: 16
+          type: "string"
+          description: "Reference supplied by the debtor for reconciliation. Maximum\
+            \ 16 characters."
+          nullable: true
+        paymentDate:
+          type: "string"
+          description: "Date on which the payment should be made."
+          format: "date"
+          nullable: true
+      additionalProperties: false
+      description: "Request to initiate a domestic credit transfer."
+      example:
+        isStp: true
+        endToEndIdentification: "E2E-2026-118"
+        debtorAccount:
+          bban: "015926007654"
+          nationalId: "0101302399"
+        creditorAccount:
+          bban: "010826123456"
+          nationalId: "4502692119"
+        instructedAmount:
+          amount: 25000
+          currency: "ISK"
+        categoryCode: "03"
+        remittanceInformationUnstructured: "Invoice 2026-118"
+        debtorReference: "INV-2026-118"
+        paymentDate: "2026-10-01"
+    CreditTransferResponse:
+      required:
+      - "debtorAccount"
+      - "id"
+      - "instructedAmount"
+      - "isFuturePayment"
+      - "isPeriodicPayment"
+      - "status"
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          description: "Unique identifier for the payment."
+        status:
+          allOf:
+          - $ref: "#/components/schemas/PaymentStatus"
+          description: "Current status of the payment."
+        paymentDate:
+          type: "string"
+          description: "The date on which the payment is scheduled to be executed."
+          format: "date"
+          nullable: true
+        instructedAmount:
+          allOf:
+          - $ref: "#/components/schemas/Money"
+          description: "The instructed amount and currency."
+        debtorAccount:
+          allOf:
+          - $ref: "#/components/schemas/AccountIdentificationResponse"
+          description: "The debtor's account details."
+        creditorAccount:
+          allOf:
+          - $ref: "#/components/schemas/AccountIdentificationResponse"
+          description: "The creditor's account details."
+          nullable: true
+        ultimateDebtor:
+          allOf:
+          - $ref: "#/components/schemas/UltimateParty"
+          description: "Ultimate debtor party information."
+          nullable: true
+        ultimateCreditor:
+          allOf:
+          - $ref: "#/components/schemas/UltimateParty"
+          description: "Ultimate creditor party information."
+          nullable: true
+        categoryCode:
+          type: "string"
+          description: "Payment category code."
+          nullable: true
+        remittanceInformationUnstructured:
+          maxLength: 140
+          type: "string"
+          description: "Unstructured remittance information."
+          nullable: true
+        debtorReference:
+          maxLength: 16
+          type: "string"
+          description: "Debtor reference for reconciliation. Maximum 16 characters."
+          nullable: true
+        endToEndIdentification:
+          maxLength: 35
+          type: "string"
+          description: "End-to-end identification provided by the initiating party."
+          nullable: true
+        exchangeRate:
+          allOf:
+          - $ref: "#/components/schemas/ExchangeRateResponse"
+          description: "Exchange rate information if applicable."
+          nullable: true
+        isFuturePayment:
+          type: "boolean"
+          description: "Indicates whether this is a future-dated payment."
+        isPeriodicPayment:
+          type: "boolean"
+          description: "Indicates whether this is a periodic (recurring) payment."
+      additionalProperties: false
+      description: "Details and current processing status of a domestic credit transfer."
+      example:
+        id: "sandbox-pay-001"
+        status: "completed"
+        paymentDate: "2026-10-01"
+        instructedAmount:
+          amount: 25000
+          currency: "ISK"
+        debtorAccount:
+          bban: "015926007654"
+          nationalId: "0101302399"
+        creditorAccount:
+          bban: "010826123456"
+          nationalId: "4502692119"
+        categoryCode: "03"
+        remittanceInformationUnstructured: "Invoice 2026-118"
+        debtorReference: "INV-2026-118"
+        endToEndIdentification: "E2E-2026-118"
+        isFuturePayment: false
+        isPeriodicPayment: false
+    DateRange:
+      type: "object"
+      properties:
+        from:
+          type: "string"
+          description: "Start date of the range (inclusive)."
+          format: "date"
+          nullable: true
+        to:
+          type: "string"
+          description: "End date of the range (inclusive)."
+          format: "date"
+          nullable: true
+      additionalProperties: false
+      description: "An inclusive date range. Either bound may be omitted."
+    DomesticPaymentsBatchRequest:
+      required:
+      - "claims"
+      - "creditTransfers"
+      - "isAggregate"
+      - "isStp"
+      - "rollbackOnError"
+      type: "object"
+      properties:
+        batchName:
+          maxLength: 45
+          pattern: "^[a-zA-Z0-9ÁáÉéÍíÓóÚúÝýÆæÖöÐðÞþ@+()\\t'/.,*:\\- _]*$"
+          type: "string"
+          description: "Optional name used to identify the batch. Maximum 45 characters."
+          nullable: true
+        isStp:
+          type: "boolean"
+          description: "Whether the batch should bypass manual approval when permitted."
+        isAggregate:
+          type: "boolean"
+          description: "Whether all payments should be debited as one aggregate withdrawal."
+        rollbackOnError:
+          type: "boolean"
+          description: "Whether all payments should be rolled back if one payment\
+            \ fails."
+        categoryCode:
+          type: "string"
+          description: "Default payment category code for the batch."
+          nullable: true
+        debtorAccount:
+          allOf:
+          - $ref: "#/components/schemas/AccountIdentification"
+          description: "Default account from which payments are debited."
+          nullable: true
+        paymentDate:
+          type: "string"
+          description: "Requested payment date for the batch."
+          format: "date"
+          nullable: true
+        creditTransfers:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/CreditTransferBatchPaymentElement"
+          description: "Domestic credit transfers included in the batch."
+        claims:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/ClaimBatchPaymentElement"
+          description: "Claim payments included in the batch."
+      additionalProperties: false
+      description: "Request to initiate a batch of domestic payments."
+      example:
+        batchName: "Salaries October 2026"
+        isStp: false
+        isAggregate: false
+        rollbackOnError: true
+        debtorAccount:
+          bban: "015926007654"
+          nationalId: "0101302399"
+        paymentDate: "2026-10-01"
+        creditTransfers:
+        - instructedAmount:
+            amount: 450000
+            currency: "ISK"
+          creditorAccount:
+            bban: "010826123456"
+            nationalId: "4502692119"
+          remittanceInformationUnstructured: "Salary October 2026"
+          debtorReference: "SAL-2026-10-001"
+        claims:
+        - instructedAmount:
+            amount: 25000
+            currency: "ISK"
+          claim:
+            claimNumber: "053026000001"
+            claimantNationalId: "4502692119"
+    ExchangeRateCalculationMethod:
+      enum:
+      - "multiplier"
+      - "divider"
+      type: "string"
+      description: "How an exchange rate is applied to convert between the instructed\
+        \ and debited currency."
+    ExchangeRateResponse:
+      required:
+      - "rate"
+      type: "object"
+      properties:
+        rate:
+          type: "number"
+          description: "The exchange rate applied."
+          format: "double"
+        calculationMethod:
+          allOf:
+          - $ref: "#/components/schemas/ExchangeRateCalculationMethod"
+          description: "Whether the rate multiplies or divides the instructed amount\
+            \ to give the debited amount."
+          nullable: true
+        debitedAmount:
+          allOf:
+          - $ref: "#/components/schemas/Money"
+          description: "The amount debited from the debtor account after conversion,\
+            \ with its currency."
+          nullable: true
+        debtorCapitalGainsTaxRate:
+          type: "number"
+          description: "The exchange rate recorded for capital gains taxation. When\
+            \ a payment is debited from a\r\nforeign-currency account, Icelandic tax\
+            \ rules treat the conversion as a realisation of the\r\ncurrency holding,\
+            \ and the gain or loss is assessed against this rate. It is an exchange\
+            \ rate,\r\nnot a tax percentage, and may differ from `rate`. Present only\
+            \ for foreign-currency\r\ndebtor accounts."
+          format: "double"
+          nullable: true
+      additionalProperties: false
+      description: "The exchange rate applied to a currency-converting payment, from\
+        \ the debtor's side."
+    MandateInitiationResponse:
+      required:
+      - "id"
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          description: "The identifier used to retrieve the mandate."
+      additionalProperties: false
+      description: "The identifier returned after creating a direct debit mandate."
+      example:
+        id: "sandbox-mandate-001"
+    MandateResponse:
+      required:
+      - "claimantNationalId"
+      - "id"
+      - "payorNationalId"
+      - "status"
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          description: "The unique mandate identifier."
+        claimantNationalId:
+          pattern: "^[0-9]{10}$"
+          type: "string"
+          description: "The claimant's national ID (kennitala), returned as ten digits\
+            \ without a dash."
+        payorNationalId:
+          pattern: "^[0-9]{10}$"
+          type: "string"
+          description: "The payor's national ID (kennitala), returned as ten digits\
+            \ without a dash."
+        status:
+          allOf:
+          - $ref: "#/components/schemas/MandateStatus"
+          description: "The current state of the mandate."
+        debtorAccount:
+          allOf:
+          - $ref: "#/components/schemas/AccountIdentificationResponse"
+          description: "The account payments are withdrawn from, with the account\
+            \ holder's national ID."
+          nullable: true
+        categoryCode:
+          type: "string"
+          description: "The mandate category code."
+          nullable: true
+        customerNumber:
+          type: "string"
+          description: "The unique payor identifier assigned by the claimant (e.g.\
+            \ meter number, loan number)."
+          nullable: true
+        bank:
+          type: "string"
+          description: "The claimant's bank (branch) number."
+          nullable: true
+        validationPeriod:
+          allOf:
+          - $ref: "#/components/schemas/DateRange"
+          description: "The period during which the mandate is valid, as supplied\
+            \ when it was created. Either bound may be\r\nnull when the mandate is\
+            \ open-ended on that side; null altogether when no period was set."
+          nullable: true
+      additionalProperties: false
+      description: "A single direct debit mandate. Fields not available for the mandate\
+        \ are null."
+      example:
+        id: "sandbox-mandate-001"
+        claimantNationalId: "4502692119"
+        payorNationalId: "0101302399"
+        status: "active"
+        debtorAccount:
+          bban: "015926007654"
+          nationalId: "0101302399"
+        categoryCode: "KH"
+        customerNumber: "1505658480"
+        bank: "0159"
+        validationPeriod:
+          from: "2026-10-01"
+          to: "2027-09-30"
+    MandateStatus:
+      enum:
+      - "draft"
+      - "pendingValidation"
+      - "reopened"
+      - "suspended"
+      - "active"
+      - "closed"
+      type: "string"
+      description: "The state of a direct debit mandate.\r\n`draft`: registration\
+        \ has begun but is not complete. `pendingValidation`: awaits confirmation.\r\
+        \n`reopened`: opened for changes. `suspended`: payments are paused. `active`:\
+        \ confirmed and\r\nin use. `closed`: no longer in effect."
+    MandateType:
+      enum:
+      - "ikClaim"
+      - "rbLoan"
+      - "creditCard"
+      - "bankLoan"
+      type: "string"
+      description: "The type of a direct debit mandate.\r\n`ikClaim`: an Icelandic-format\
+        \ claim. `rbLoan`: a loan serviced by the Icelandic banks' central\r\nsystem;\
+        \ the customer number is the 12-digit loan number. `creditCard`: a credit\
+        \ card.\r\n`bankLoan`: a loan in another bank system."
+    Money:
+      required:
+      - "amount"
+      - "currency"
+      type: "object"
+      properties:
+        amount:
+          type: "number"
+          description: "The amount, as a number."
+          format: "double"
+          example: 1250.23
+        currency:
+          pattern: "^[A-Z]{3}$"
+          type: "string"
+          description: "The three-letter uppercase ISO 4217 currency code."
+          example: "ISK"
+      additionalProperties: false
+      description: "A monetary amount together with its currency."
+    PaymentInitiationResponse:
+      required:
+      - "id"
+      - "status"
+      type: "object"
+      properties:
+        status:
+          allOf:
+          - $ref: "#/components/schemas/PaymentStatus"
+          description: "The initial status of the payment."
+        id:
+          type: "string"
+          description: "The payment identifier used to retrieve the payment."
+      additionalProperties: false
+      description: "The identifier and initial status returned after payment initiation."
+      example:
+        status: "received"
+        id: "sandbox-pay-001"
+    PaymentStatus:
+      enum:
+      - "unknown"
+      - "received"
+      - "processing"
+      - "pending"
+      - "pendingApproval"
+      - "suspended"
+      - "completed"
+      - "deleted"
+      - "rejected"
+      - "recalled"
+      - "cancelled"
+      type: "string"
+      description: "The processing status of a payment.\r\n`received`: accepted, not\
+        \ yet processed. `pendingApproval`: stored, awaits approval before it is executed.\r\
+        \n`pending`: scheduled, waiting to be executed. `processing`: being executed.\
+        \ `suspended`: processing paused.\r\n`completed`: executed. `deleted`: removed\
+        \ before execution. `rejected`: refused. `recalled`: reversed after execution.\r\
+        \n`cancelled`: cancelled before execution. `unknown`: the status could not\
+        \ be determined; retry the request later."
+    ProblemDetails:
+      type: "object"
+      properties:
+        type:
+          type: "string"
+          description: "A URI reference that identifies the problem type. When dereferenced\
+            \ it should provide human-readable documentation for the problem type."
+          nullable: true
+        title:
+          type: "string"
+          description: "A short, human-readable summary of the problem type. It should\
+            \ not change between occurrences of the same problem."
+          nullable: true
+        status:
+          type: "integer"
+          description: "The HTTP status code generated by the origin server for this\
+            \ occurrence of the problem."
+          format: "int32"
+          nullable: true
+        detail:
+          type: "string"
+          description: "A human-readable explanation specific to this occurrence of\
+            \ the problem."
+          nullable: true
+        instance:
+          type: "string"
+          description: "A URI reference that identifies the specific occurrence of\
+            \ the problem."
+          nullable: true
+      additionalProperties: {}
+      description: "A machine-readable description of an error, as defined in RFC\
+        \ 9457 (Problem Details for HTTP APIs)."
+      example:
+        type: "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.3"
+        title: "Forbidden"
+        status: 403
+        traceId: "00-c07f6fdbb44f4e3e0251817d03aea458-b8fa12fe654a091a-00"
+    UltimateParty:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: "Name of the ultimate debtor or creditor."
+          nullable: true
+        nationalId:
+          pattern: "^[0-9]{6}-?[0-9]{4}$"
+          type: "string"
+          description: "National ID (kennitala) of the ultimate debtor or creditor.\
+            \ Accepted as ten digits with or without\r\na dash; returned as ten digits\
+            \ without a dash."
+          nullable: true
+      additionalProperties: false
+      description: "Details of an ultimate debtor or creditor when different from\
+        \ the account holder."
+    ValidationProblemDetails:
+      required:
+      - "errors"
+      type: "object"
+      properties:
+        type:
+          type: "string"
+          description: "A URI reference that identifies the problem type. When dereferenced\
+            \ it should provide human-readable documentation for the problem type."
+          nullable: true
+        title:
+          type: "string"
+          description: "A short, human-readable summary of the problem type. It should\
+            \ not change between occurrences of the same problem."
+          nullable: true
+        status:
+          type: "integer"
+          description: "The HTTP status code generated by the origin server for this\
+            \ occurrence of the problem."
+          format: "int32"
+          nullable: true
+        detail:
+          type: "string"
+          description: "A human-readable explanation specific to this occurrence of\
+            \ the problem."
+          nullable: true
+        instance:
+          type: "string"
+          description: "A URI reference that identifies the specific occurrence of\
+            \ the problem."
+          nullable: true
+        errors:
+          type: "object"
+          additionalProperties:
+            type: "array"
+            items:
+              type: "string"
+          description: "A dictionary mapping each invalid input field to a list of\
+            \ human-readable error messages describing why the value was rejected."
+      additionalProperties: {}
+      description: "A machine-readable description of a validation error, as defined\
+        \ in RFC 9457 (Problem Details for HTTP APIs). The errors extension member\
+        \ contains a dictionary that maps each invalid input field to a list of human-readable\
+        \ error messages."
+      example:
+        type: "https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.1"
+        title: "One or more validation errors occurred."
+        status: 400
+        errors:
+          nationalId:
+          - "Kennitalan er ekki á réttu formi."
+        traceId: "00-c07f6fdbb44f4e3e0251817d03aea458-b8fa12fe654a091a-00"
+tags:
+- name: "CardDeposits"
+  description: "Initiate deposits to payment cards and retrieve previously initiated\
+    \ card deposits."
+- name: "ClaimPayments"
+  description: "Initiate payments of Icelandic claims and retrieve previously initiated\
+    \ claim payments."
+- name: "CreditTransfers"
+  description: "Initiate domestic credit transfers and retrieve previously initiated\
+    \ transfers."
+- name: "DirectDebitMandates"
+  description: "Create and retrieve direct debit mandates that authorise recurring\
+    \ or future payments."
+- name: "DomesticBatches"
+  description: "Initiate batches of domestic payments and retrieve their status and\
+    \ individual payments."
