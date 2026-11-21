@@ -1,0 +1,463 @@
+openapi: 3.0.3
+info:
+  title: Payment Initiation Service SPI
+  version: 1.0.0
+  description: |-
+    [SPI] Initiate payments to banks or payment services
+
+#    Payment initiation is the process of initiating a payment transaction
+#    on behalf of a customer through a payment initiation service API.
+#
+#    A payment initiation request typically includes information about the payment,
+#    such as the amount, currency, payment recipient, and payment purpose.
+#    Once the payment initiation request is received by the party service actual accounts (Bank or Wallet),
+#    it is processed and the payment status is updated accordingly.
+#
+#    Payment status refers to the current status of a payment transaction. This status is updated
+#    as the payment is processed, and it may include information about whether the payment
+#    was successful or not, whether it is still pending, and any error messages that may have occurred.
+#
+#    Payment status information is typically provided through the payment status
+#    update endpoint. By monitoring the payment status, service providers can provide
+#    their customers with up-to-date information about the progress of their payments and
+#    ensure that any issues are promptly addressed.
+  contact:
+    name: Kyriba Developer Portal Support
+    url: </portal-extension/documentation/Help?page=/Help/Contact Us>
+servers:
+- url: /bank-connectivity/payment-initiation/v1
+tags:
+- name: " "
+  description: |
+    <a href="/static/apis/payment-initiation-spi/payment-initiation-spi.yaml" download> Download OpenAPI Specification</a>
+    <br/>
+    <a href="/static/pages/use-cases/payment-spi-implementation-validation-kit/payment-spi-validation.json" download> Download Postman Collection</a>
+- name: Payment Initiation
+security:
+- OAuth2ClientCredentials: []
+paths:
+  /banks:
+    get:
+      operationId: readPaymentInitiationEndpoints
+      tags:
+      - Payment Initiation
+      description: Introspects service provider.
+      parameters:
+      - $ref: '#/components/parameters/CommonV1offsetParam'
+      - $ref: '#/components/parameters/CommonV1limitParam'
+      responses:
+        "200":
+          description: The list of endpoints provided by service provider.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EndpointsPage'
+        "400":
+          $ref: '#/components/responses/CommonV1Problem400BadRequest'
+        "403":
+          $ref: '#/components/responses/CommonV1Problem403AuthorizationRequired'
+  /bank/{bankNameOrId}/payments:
+    parameters:
+    - $ref: '#/components/parameters/bankNameOrIdParam'
+    post:
+      operationId: initiatePayment
+      tags:
+      - Payment Initiation
+      description: Submits request for payment initiation.
+      parameters:
+      - $ref: '#/components/parameters/kyribaContextHeaderParam'
+      - $ref: '#/components/parameters/idempotencyKeyHeaderParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentInitiationRequest'
+      responses:
+        "201":
+          description: Payment initialization is created. Further status updates are
+            expected.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentInitiationResponse'
+        "400":
+          $ref: '#/components/responses/CommonV1Problem400BadRequest'
+        "403":
+          $ref: '#/components/responses/CommonV1Problem403AuthorizationRequired'
+        "404":
+          $ref: '#/components/responses/CommonV1Problem404NotFound'
+  /bank/{bankNameOrId}/payments/{paymentId}/status:
+    parameters:
+    - $ref: '#/components/parameters/bankNameOrIdParam'
+    - $ref: '#/components/parameters/paymentIdParam'
+    get:
+      operationId: readPaymentStatus
+      tags:
+      - Payment Initiation
+      description: Reads payment status.
+      parameters:
+      - $ref: '#/components/parameters/kyribaContextHeaderParam'
+      responses:
+        "202":
+          description: Status of payment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentStatusResponse'
+        "400":
+          $ref: '#/components/responses/CommonV1Problem400BadRequest'
+        "403":
+          $ref: '#/components/responses/CommonV1Problem403AuthorizationRequired'
+        "404":
+          $ref: '#/components/responses/CommonV1Problem404NotFound'
+components:
+  schemas:
+    EndpointsPage:
+      type: object
+      properties:
+        metadata:
+          $ref: '#/components/schemas/CommonV1PageMetadata'
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Endpoint'
+    Endpoint:
+      type: object
+      properties:
+        id:
+          type: string
+          description: UUID identifier. This identifier should uniquely identify bank
+            payment initiation endpoint.
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426655440001
+        name:
+          type: string
+          pattern: "^[a-zA-Z0-9_]+$"
+          example: jpmc
+          description: |-
+            Name of payment endpoint in scope of service provider.
+
+            Examples: jpmc, scb, bnp, citi
+            Matches regular expression: ^[a-zA-Z0-9_]+$ .
+        title:
+          type: string
+          example: JPMorgan Chase & Co.
+          description: |-
+            Name of payment endpoint in scope of service provider
+
+            Examples:
+             - JPMorgan Chase & Co.
+             - Standard Chartered Bank
+             - BNP Paribas
+             - Citibank
+    PaymentInitiationRequest:
+      type: object
+      required:
+      - remittance
+      properties:
+        remittance:
+          $ref: '#/components/schemas/RemittancePayload'
+    PaymentInitiationResponse:
+      type: object
+      required:
+      - id
+      properties:
+        id:
+          type: string
+          pattern: "^[a-zA-Z0-9-]+$"
+          description: Identifier for payment initiated.
+    PaymentStatusResponse:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          $ref: '#/components/schemas/StatusPayload'
+    RemittancePayload:
+      required:
+      - format
+      - subFormat
+      - payload
+      properties:
+        format:
+          type: string
+          description: For now only one format is supported - 'XML Pain ISO 2019'.
+        subFormat:
+          type: string
+          description: |-
+            Depending on format one of sub-formats used.
+
+            Following values are supported for format 'XML Pain ISO 2019':
+             - Standard CGI compliant
+        payload:
+          $ref: '#/components/schemas/CommonV1EmbeddablePayload'
+    StatusPayload:
+      required:
+      - format
+      properties:
+        format:
+          type: string
+          description: For now only one format is supported - 'XML Pain 002.001.03'.
+        payload:
+          $ref: '#/components/schemas/CommonV1EmbeddablePayload'
+    CommonV1PagingLinks:
+      title: PageLinks
+      type: object
+      description: Links for pages.
+      properties:
+        current:
+          type: string
+          description: Current page.
+          example: https://host/gateway/api/resources?limit=10&offset=10
+        next:
+          type: string
+          description: Next page.
+          example: https://host/gateway/api/resources?limit=10&offset=20
+          nullable: true
+        prev:
+          type: string
+          description: Previous page.
+          example: https://host/gateway/api/resources?limit=10&offset=0
+          nullable: true
+    CommonV1PageMetadata:
+      title: PageMetadata
+      type: object
+      properties:
+        links:
+          $ref: '#/components/schemas/CommonV1PagingLinks'
+        count:
+          minimum: 0
+          type: integer
+          description: The number of records in current page.
+          format: int64
+          example: 10
+        total:
+          minimum: 0
+          type: integer
+          description: The number of total records.
+          format: int64
+          example: 100
+        limit:
+          minimum: 1
+          type: integer
+          description: Limit the number of records per page. By default 100.
+          format: int32
+          example: 100
+        offset:
+          minimum: 0
+          type: integer
+          description: Page Offset means the number of records you want to skip before
+            starting reading. By default 0.
+          format: int32
+          example: 0
+    CommonV1ProblemDetails:
+      title: ProblemDetail
+      type: object
+      description: Common Problem Detail object which should be used or extended by
+        all APIs. Implements RFC 7807 standard.
+      required:
+      - title
+      - detail
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          description: A URI reference that uniquely identifies the problem type only
+            in the context of the provided API.
+          default: about:blank
+          example: /some/uri-reference
+        title:
+          type: string
+          description: "A short, human-readable summary of the problem type."
+          example: Resource not found
+        detail:
+          type: string
+          description: A human-readable explanation specific to this occurrence of
+            the problem.
+          example: "Resource with id [0] not found"
+        status:
+          type: integer
+          format: int32
+          description: The HTTP status code generated by the origin server for this
+            occurrence of the problem.
+          example: 404
+        instance:
+          type: string
+          format: uri-reference
+          description: "A URI reference that identifies the specific occurrence of\
+            \ the problem, e.g. by adding a fragment identifier or sub-path to the\
+            \ problem type. May be used to locate the root of this problem in the\
+            \ source code."
+          example: /some/uri-reference#specific-occurrence-context
+    CommonV1EmbeddablePayload:
+      description: |-
+        Encrypted and/or compressed payload that might be either embedded into request or externalized via the URL link.
+        Encryption and compression is optional.
+
+        Data is supposed to be specified either in 'body' in embedded mode or via 'resource' as external location.
+        If neither of sources is specified or specified both the 422 unprocessable entity error should be returned.
+      properties:
+        encryption:
+          type: object
+          required:
+          - algorithm
+          - keyName
+          properties:
+            algorithm:
+              type: string
+              description: Encryption algorithm. One encryption algorithm is supported
+                - "AES-256-GCM".
+            keyName:
+              type: string
+              description: Identifier of key used. Important to have once key is rotated
+            initialVector:
+              type: string
+              description: |-
+                Hex representation of initial vector used for following algorithms:
+                 - AES-256-GCM
+
+                This must be unique for every encryption operation carried out with a given key.
+                The AES-GCM specification recommends that the IV should be 96 bits long, and typically contains bits from a random number generator
+                [Section 8.2](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf#%5B%7B%22num%22%3A65%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C0%2C792%2Cnull%5D)
+                of the specification outlines methods for constructing IVs. Note that the IV does not have to be secret,
+                just unique: so it is OK, for example, to transmit it in the clear alongside the encrypted message.
+        compression:
+          type: string
+          description: Compression of a payload. One compression algorithm is supported
+            - "gzip".
+        body:
+          type: object
+          required:
+          - content
+          - contentEncoding
+          properties:
+            content:
+              type: string
+              description: "Content which is compressed, encrypted and encoded."
+            contentEncoding:
+              type: string
+              description: Encoding that 'content' field is provided. One encoding
+                algorithm is supported - "base64".
+        resource:
+          type: object
+          required:
+          - url
+          properties:
+            url:
+              type: string
+              format: uri
+              description: Location to fetch content from.
+            headers:
+              type: object
+              description: Headers to use to fetch content.
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+  parameters:
+    bankNameOrIdParam:
+      name: bankNameOrId
+      in: path
+      description: Parameters that might be set either to name or UUID.
+      required: true
+      schema:
+        type: string
+    paymentIdParam:
+      name: paymentId
+      in: path
+      description: Unique payment identifier.
+      required: true
+      schema:
+        type: string
+    idempotencyKeyHeaderParam:
+      name: Idempotency-Key
+      in: header
+      description: |-
+        An identifier for service provider to
+        reject duplicated payment initiations.
+      required: true
+      schema:
+        type: string
+        pattern: "^[a-zA-Z0-9-]+$"
+        description: Key can only contain Alpha-Numeric characters or hyphens.
+      example: GB49BARC20195473145199-1234567890123456
+    kyribaContextHeaderParam:
+      name: Kyriba-Context
+      in: header
+      description: |-
+        A JWT token to identify Kyriba customer using service provider.
+        Claims:
+         * iss - One of the following Kyriba platform URLs:
+           "https://ruby.treasury-factory.com",
+           "https://aquamarine.treasury-factory.com",
+           "https://topaz.treasury-factory.com",
+           "https://emerald.treasury-factory.com",
+           "https://diamond.treasury-factory.com",
+           "https://opal.treasury-factory.com",
+           "https://ammolite.treasury-factory.com",
+           "https://jade.treasury-factory.com",
+           "https://quartz.treasury-factory.com",
+           "https://onyx.treasury-factory.com",
+           "https://neo.proto.cloud.kyriba.com"
+         * sub - "CUSTOMER CODE@BANKCODE"
+         * aud - "<SERVICE PROVIDER BASE URL>"
+         * kid - It should be mapped to the public key of the sign certificate generated on the Customer level
+         * exp - expiration time
+         * iat - issued at time
+         * jti - lower-case 32 hex digit unique token identifier
+         * payload_hash - SHA256 of an original formatted, but not encrypted or compressed payload
+      required: true
+      schema:
+        type: string
+      example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL3J1YnkudHJlYXN1cnktZmFjdG9yeS5jb20vZ2F0ZXdheSIsInN1YiI6IkNNUDExQEpQTUMxIiwiYXVkIjoiaHR0cHM6Ly9leGFtcGxlLXNlcnZpY2UtcHJvdmlkZXIuY29tLyIsImtpZCI6Imp3dC1rZXktMjgxMTIyIiwiZXhwIjoxNTE2Mjc5MDIyLCJpYXQiOjE1MTYyMzkwMjIsImp0aSI6IjhhY2ZkYjRjNDdmYjRmMmUzMDg1MzdGYTE2OTBlZWI4IiwicGF5bG9hZF9oYXNoIjoiZmE4ZGM3N2E1OGFmODE3YmEzMTRmNTNiMWNlMTc3NzJhMzE1NTAwYTBjODE4MTU4MmY3NDEyM2VjMDQ4ZWNjMSJ9.Yg96-GZLD3_ufvuXampCT1rUC5I0jWe8kJBHgyy1lZ4
+    CommonV1offsetParam:
+      name: offset
+      in: query
+      description: Page Offset means the number of records you want to skip before
+        starting reading.
+      schema:
+        type: integer
+        format: int32
+        default: 0
+        minimum: 0
+      example: 12
+    CommonV1limitParam:
+      name: limit
+      in: query
+      description: Limit the number of records per page.
+      schema:
+        type: integer
+        format: int32
+        default: 100
+        minimum: 1
+        maximum: 1000
+      example: 100
+  securitySchemes:
+    OAuth2ClientCredentials:
+      type: oauth2
+      description: Client credentials flow.
+      flows:
+        clientCredentials:
+          tokenUrl: /oauth/token
+          scopes: {}
+  responses:
+    CommonV1Problem400BadRequest:
+      description: Bad request.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/CommonV1ProblemDetails'
+    CommonV1Problem403AuthorizationRequired:
+      description: Access token does not have the required scope or permission denied
+        to access this resource.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/CommonV1ProblemDetails'
+    CommonV1Problem404NotFound:
+      description: Data not found.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/CommonV1ProblemDetails'
